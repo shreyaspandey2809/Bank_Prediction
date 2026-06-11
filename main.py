@@ -11,16 +11,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.metrics import (
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    roc_auc_score,
-    average_precision_score,
-    confusion_matrix,
-    classification_report
-)
+from sklearn.metrics import (accuracy_score,precision_score,recall_score,f1_score,roc_auc_score,average_precision_score,confusion_matrix,classification_report)
 from sklearn.utils.class_weight import compute_class_weight
 
 DATA_PATH = "bank.csv"
@@ -43,34 +34,19 @@ print(f"Dataset Shape: {df.shape}")
 
 df = df.drop_duplicates()
 
-df[TARGET] = df[TARGET].map({
-    "yes": 1,
-    "no": 0
-})
+df[TARGET] = df[TARGET].map({"yes": 1,"no": 0})
 
 print("Feature Engineering...")
 
 df["log_balance"] = np.log1p(df["balance"].clip(lower=0))
 
-df["has_debt"] = (
-    ((df["housing"] == "yes") &
-     (df["loan"] == "yes"))
-).astype(int)
+df["has_debt"] = (((df["housing"] == "yes") & (df["loan"] == "yes"))).astype(int)
 
-df["risk_score"] = (
-    (df["default"] == "yes").astype(int) * 3 +
-    (df["housing"] == "yes").astype(int) +
-    (df["loan"] == "yes").astype(int)
-)
+df["risk_score"] = ((df["default"] == "yes").astype(int) * 3 + (df["housing"] == "yes").astype(int) + (df["loan"] == "yes").astype(int))
 
-df["duration_per_contact"] = (
-    df["duration"] /
-    df["campaign"].clip(lower=1)
-)
+df["duration_per_contact"] = (df["duration"] / df["campaign"].clip(lower=1))
 
-df["prev_success"] = (
-    df["poutcome"] == "success"
-).astype(int)
+df["prev_success"] = (df["poutcome"] == "success").astype(int)
 
 month_map = {
     "jan":1,"feb":2,"mar":3,"apr":4,
@@ -85,28 +61,17 @@ y = df[TARGET]
 
 numerical_cols = X.select_dtypes(include=np.number).columns.tolist()
 
-categorical_cols = X.select_dtypes(
-    include=["object"]
-).columns.tolist()
+categorical_cols = X.select_dtypes(include=["object"]).columns.tolist()
 
 print(f"Numerical Features: {len(numerical_cols)}")
 print(f"Categorical Features: {len(categorical_cols)}")
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size=TEST_SIZE,
-    stratify=y,
-    random_state=RANDOM_STATE
-)
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=TEST_SIZE,stratify=y,random_state=RANDOM_STATE)
 
 print("\nTrain Shape:", X_train.shape)
 print("Test Shape :", X_test.shape)
 
-numeric_pipeline = Pipeline([
-    ("imputer", SimpleImputer(strategy="median")),
-    ("scaler", StandardScaler())
-])
+numeric_pipeline = Pipeline([("imputer", SimpleImputer(strategy="median")),("scaler", StandardScaler())])
 
 categorical_pipeline = Pipeline([
     ("imputer", SimpleImputer(strategy="most_frequent")),
@@ -116,10 +81,7 @@ categorical_pipeline = Pipeline([
     ))
 ])
 
-preprocessor = ColumnTransformer([
-    ("num", numeric_pipeline, numerical_cols),
-    ("cat", categorical_pipeline, categorical_cols)
-])
+preprocessor = ColumnTransformer([("num", numeric_pipeline, numerical_cols),("cat", categorical_pipeline, categorical_cols)])
 
 print("\nPreprocessing data...")
 
@@ -128,16 +90,9 @@ X_test_processed = preprocessor.transform(X_test)
 
 print("Processed Shape:", X_train_processed.shape)
 
-weights = compute_class_weight(
-    class_weight="balanced",
-    classes=np.unique(y_train),
-    y=y_train
-)
+weights = compute_class_weight(class_weight="balanced",classes=np.unique(y_train),y=y_train)
 
-class_weights = {
-    0: weights[0],
-    1: weights[1]
-}
+class_weights = { 0: weights[0], 1: weights[1]}
 
 print("Class Weights:", class_weights)
 
@@ -147,41 +102,24 @@ model = tf.keras.Sequential([
 
     tf.keras.layers.Input(shape=(input_dim,)),
 
-    tf.keras.layers.Dense(
-        256,
-        activation="relu"
-    ),
+    tf.keras.layers.Dense(256,activation="relu"),
     tf.keras.layers.BatchNormalization(),
     tf.keras.layers.Dropout(0.30),
 
-    tf.keras.layers.Dense(
-        128,
-        activation="relu"
-    ),
+    tf.keras.layers.Dense(128,activation="relu"),
     tf.keras.layers.BatchNormalization(),
     tf.keras.layers.Dropout(0.30),
 
-    tf.keras.layers.Dense(
-        64,
-        activation="relu"
-    ),
+    tf.keras.layers.Dense(64,activation="relu"),
     tf.keras.layers.Dropout(0.20),
 
-    tf.keras.layers.Dense(
-        32,
-        activation="relu"
-    ),
+    tf.keras.layers.Dense(32,activation="relu"),
 
-    tf.keras.layers.Dense(
-        1,
-        activation="sigmoid"
-    )
+    tf.keras.layers.Dense(1,activation="sigmoid")
 
 ])
 
-optimizer = tf.keras.optimizers.AdamW(
-    learning_rate=0.001
-)
+optimizer = tf.keras.optimizers.AdamW(learning_rate=0.001)
 
 model.compile(
     optimizer=optimizer,
@@ -277,26 +215,17 @@ print("\nSaving model...")
 
 model.save("bank_marketing_nn.keras")
 
-joblib.dump(
-    preprocessor,
-    "preprocessor.pkl"
-)
+joblib.dump(preprocessor,"preprocessor.pkl")
 
 print("Model Saved Successfully!")
 
 def predict_customer(customer_dict):
 
-    model = tf.keras.models.load_model(
-        "bank_marketing_nn.keras"
-    )
+    model = tf.keras.models.load_model("bank_marketing_nn.keras")
 
-    preprocessor = joblib.load(
-        "preprocessor.pkl"
-    )
+    preprocessor = joblib.load("preprocessor.pkl")
 
-    customer_df = pd.DataFrame(
-        [customer_dict]
-    )
+    customer_df = pd.DataFrame([customer_dict])
 
     customer_df["log_balance"] = np.log1p(
         customer_df["balance"].clip(lower=0)
@@ -315,32 +244,17 @@ def predict_customer(customer_dict):
         (customer_df["loan"] == "yes").astype(int)
     )
 
-    customer_df["duration_per_contact"] = (
-        customer_df["duration"] /
-        customer_df["campaign"].clip(lower=1)
-    )
+    customer_df["duration_per_contact"] = (customer_df["duration"] / customer_df["campaign"].clip(lower=1))
 
-    customer_df["prev_success"] = (
-        customer_df["poutcome"] == "success"
-    ).astype(int)
+    customer_df["prev_success"] = (customer_df["poutcome"] == "success").astype(int)
 
-    customer_df["month_num"] = (
-        customer_df["month"]
-        .map(month_map)
-    )
+    customer_df["month_num"] = (customer_df["month"].map(month_map))
 
-    X_new = preprocessor.transform(
-        customer_df
-    )
+    X_new = preprocessor.transform(customer_df)
 
-    probability = model.predict(
-        X_new,
-        verbose=0
-    )[0][0]
+    probability = model.predict(X_new,verbose=0)[0][0]
 
-    prediction = int(
-        probability >= 0.50
-    )
+    prediction = int(probability >= 0.50)
 
     return {
         "prediction": prediction,
