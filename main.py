@@ -25,7 +25,6 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
 
-# ── Config ──────────────────────────────────────────────────────────────────
 RANDOM_STATE   = 42
 RETRAIN_EVERY  = 10          # auto-retrain after this many new feedback rows
 DB_PATH        = "feedback.db"
@@ -41,7 +40,6 @@ MONTH_MAP = {
     "jul":7,"aug":8,"sep":9,"oct":10,"nov":11,"dec":12
 }
 
-# ── Database ─────────────────────────────────────────────────────────────────
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute("""
@@ -82,7 +80,6 @@ def get_db():
 
 init_db()
 
-# ── Global state ─────────────────────────────────────────────────────────────
 _retrain_lock   = threading.Lock()
 _is_retraining  = False
 
@@ -91,7 +88,6 @@ def load_model_and_preprocessor():
     pre   = joblib.load(PREPROCESSOR_PATH)         if os.path.exists(PREPROCESSOR_PATH) else None
     return model, pre
 
-# ── Feature engineering (mirrors training script) ────────────────────────────
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["log_balance"]         = np.log1p(df["balance"].clip(lower=0))
@@ -108,7 +104,6 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df["month_num"]           = df["month"].map(MONTH_MAP)
     return df
 
-# ── Retrain logic ─────────────────────────────────────────────────────────────
 def retrain_model():
     global _is_retraining
     with _retrain_lock:
@@ -260,7 +255,6 @@ def maybe_trigger_retrain(background_tasks: BackgroundTasks):
     if count >= RETRAIN_EVERY and not _is_retraining:
         background_tasks.add_task(retrain_model)
 
-# ── Pydantic schemas ──────────────────────────────────────────────────────────
 class CustomerInput(BaseModel):
     age:       float
     job:       str
@@ -300,7 +294,6 @@ class FeedbackInput(BaseModel):
     probability:float
     actual:     int
 
-# ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(title="Bank Deposit Predictor")
 
 app.add_middleware(
